@@ -1,0 +1,42 @@
+[gd_scene format=3 uid="uid://cb0yy5lran3ln"]
+
+[ext_resource type="Script" uid="uid://b5ykkcuv42l6x" path="res://addons/rpg_dialog_printer/dialog_box.gd" id="1_a00km"]
+
+[node name="DialogBox" type="VBoxContainer" unique_id=1286396725]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1_a00km")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="." unique_id=876578553]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="Portrait" type="TextureRect" parent="HBoxContainer" unique_id=364070598]
+layout_mode = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="HBoxContainer" unique_id=1937434373]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MainVBox" type="VBoxContainer" parent="HBoxContainer/ScrollContainer" unique_id=54236176]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="LinesVBox" type="VBoxContainer" parent="HBoxContainer/ScrollContainer/MainVBox" unique_id=377450895]
+layout_mode = 2
+size_flags_vertical = 0
+
+[node name="InterjectionHBox" type="HBoxContainer" parent="HBoxContainer/ScrollContainer/MainVBox" unique_id=426820843]
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 8
+alignment = 2
+
+[node name="InterjectionPortrait" type="TextureRect" parent="HBoxContainer/ScrollContainer/MainVBox/InterjectionHBox" unique_id=69163086]
+layout_mode = 2

@@ -6,6 +6,8 @@ var speed_regex := RegEx.create_from_string(r'<s(?: (\w+)|)>')
 var delay_regex := RegEx.create_from_string(r'<d (\w+)>')
 var wave_regex := RegEx.create_from_string(r'<wave(?: (\d+) (\d+)|)>')
 var shake_regex := RegEx.create_from_string(r'<shake(?: (\d+) (\d+)|)>')
+var cursor_regex := RegEx.create_from_string(r'<cur(?: (\d+)|)>')
+var backspace_regex := RegEx.create_from_string(r'<b(?: (\d+)|)>')
 var char_to_word: Dictionary[DialogCharLabel, DialogWord] = {}
 var cursor_pos: int = 0:
 	get:
@@ -23,6 +25,7 @@ var allow_flow: bool = true:
 			allow_flow = value
 var _words: Array[DialogWord] = []
 var _chars: Array[DialogCharLabel] = []
+var _execution_steps: Array[ExecutionStep] = []
 var _color_presets: Dictionary[String, Color]
 var _speed_presets: Dictionary[String, int]
 var _delay_presets: Dictionary[String, int]
@@ -47,13 +50,15 @@ func _ready() -> void:
 func build_from_text(text: String, preset: Dictionary, speaker: SpeakerMeta) -> void:
 	var formatting := Formatting.new(
 		preset["color"] as Color,
-		preset["speed"] as int,
 		preset["wave_intensity"] as int,
 		preset["wave_speed"] as int,
 		preset["shake_intensity"] as int,
 		preset["shake_speed"] as int,
 	)
-	var accumulated_delay: int = 0
+	var execution_speed: int = preset["speed"]
+	## This is used to not make characters that should be inserted later in
+	## the animation reserve their space.
+	var should_reserve_space: bool = true
 	var i: int = 0
 	while i < len(text):
 		var chr: String = text[i]
@@ -69,6 +74,8 @@ func build_from_text(text: String, preset: Dictionary, speaker: SpeakerMeta) -> 
 					delay_regex,
 					wave_regex,
 					shake_regex,
+					cursor_regex,
+					backspace_regex,
 				]:
 					used_regex = regex
 					match_ = regex.search(text.substr(i, end - i + 1))
@@ -91,15 +98,15 @@ func build_from_text(text: String, preset: Dictionary, speaker: SpeakerMeta) -> 
 						speed_regex:
 							var group: String = match_.get_string(1)
 							if group and group in _speed_presets:
-								formatting.speed = _speed_presets[group]
+								execution_speed = _speed_presets[group]
 							elif group and group.is_valid_int():
-								formatting.speed = int(group)
+								execution_speed = int(group)
 							elif group:
 								printerr("ERROR Invalid dialog speed identifier: {0}.".format(
 									match_.get_string()
 								))
 							else:
-								formatting.speed = preset["speed"]
+								execution_speed = preset["speed"]
 						delay_regex:
 							var delay_: int = 0
 							var group: String = match_.get_string(1)
@@ -111,7 +118,9 @@ func build_from_text(text: String, preset: Dictionary, speaker: SpeakerMeta) -> 
 								printerr("ERROR Invalid dialog delay identifier: {0}.".format(
 									match_.get_string()
 								))
-							accumulated_delay += delay_
+							_execution_steps.append(ExecutionStep.new(
+								ExecutionStepType.DELAY, delay_,
+							))
 						wave_regex:
 							if match_.get_string(1):
 								formatting.wave_intensity = int(match_.get_string(1))
@@ -126,20 +135,45 @@ func build_from_text(text: String, preset: Dictionary, speaker: SpeakerMeta) -> 
 							else:
 								formatting.shake_intensity = preset["shake_intensity"]
 								formatting.shake_speed = preset["shake_speed"]
+						cursor_regex:
+							var group: String = match_.get_string(1)
+							if group and group.is_valid_int():
+								cursor_pos = int(group)
+							elif group:
+								printerr("ERROR Invalid cursor position: {0}.".format(
+									match_.get_string()
+								))
+							else:
+								cursor_pos = len(_chars)
+							# From now on, characters do not reserve their space anymore.
+							should_reserve_space = false
+						backspace_regex:
+							var group: String = match_.get_string(1)
+							var amount: int = 1
+							if group and group.is_valid_int():
+								amount = int(group)
+							elif group:
+								printerr("ERROR Invalid backspace amount: {0}.".format(
+									match_.get_string()
+								))
+							for idx: int in range(cursor_pos - 1, cursor_pos - 1 - amount, -1):
+								var label = _chars[idx]
+								_execution_steps.append(ExecutionStep.new(
+									ExecutionStepType.HIDE_LABEL, [label, execution_speed]
+								))
 					i = i + match_.get_end() - 1
 		elif chr != "\\" or text[i + 1] != "<":
 			# Eventually modify the speed for this particular character before writing
-			var char_speed: int = formatting.speed
-			var regular_speed: int = formatting.speed
+			var char_speed: int = execution_speed
 			if text[i - 1] == ",":
 				char_speed *= 3
 			elif text[i - 1] in [".", ":", ";"]:
 				char_speed *= 5
-			char_speed += accumulated_delay
-			accumulated_delay = 0
-			formatting.speed = char_speed
-			write(chr, speaker, formatting)
-			formatting.speed = regular_speed
+			var label: DialogCharLabel = write(chr, speaker, formatting)
+			label.reserve_space = should_reserve_space
+			_execution_steps.append(ExecutionStep.new(
+				ExecutionStepType.DISPLAY_LABEL, [label, char_speed]
+			))
 		i += 1
 
 
@@ -164,7 +198,11 @@ func write(
 		add_child(word)
 	elif chr == " ":
 		var idx: int = _words.find(word)
-		if cursor_pos < len(_chars) and word == char_to_word[_chars[cursor_pos]]:
+		if (
+			cursor_pos < len(_chars)
+			and word == char_to_word[_chars[cursor_pos]]
+			and cursor_pos != 0
+		):
 			# Split up the current word and insert a space word in between
 			var new_split_word := word.split(_chars[cursor_pos].get_index())
 			_words.insert(idx + 1, new_split_word)
@@ -179,10 +217,10 @@ func write(
 			# Insert a new space word
 			word = DialogWord.new()
 			word.is_space = true
-			_words.insert(idx + 1, word)
+			_words.insert(idx + 1 if cursor_pos != 0 else idx, word)
 			add_child(word)
-			move_child(word, idx + 1)
-	elif word.is_space:
+			move_child(word, idx + 1 if cursor_pos != 0 else idx)
+	elif word.is_space or cursor_pos == 0:
 		if cursor_pos == len(_chars):
 			# New word, end of the line_
 			word = DialogWord.new()
@@ -200,7 +238,10 @@ func write(
 			else:
 				# Prepend to next word
 				pos_in_word = 0
-	# else: Append to last word
+	elif cursor_pos < len(_chars):
+		# Write into word
+		pos_in_word = _chars[cursor_pos - 1].get_index() + 1
+	# Otherwise, append to last word
 	var label: DialogCharLabel = word.insert_char(chr, speaker, formatting, pos_in_word)
 	_chars.insert(cursor_pos, label)
 	char_to_word[label] = word
@@ -257,6 +298,56 @@ func delay(time_ms: int) -> void:
 
 
 func execute() -> void:
-	for label: DialogCharLabel in _chars:
-		await delay(label.speed)
-		label.display()
+	for step: ExecutionStep in _execution_steps:
+		match step.type:
+			ExecutionStepType.DISPLAY_LABEL:
+				var label: DialogCharLabel = step.value[0]
+				var ms: int = step.value[1]
+				await delay(ms)
+				label.display()
+			ExecutionStepType.HIDE_LABEL:
+				var label: DialogCharLabel = step.value[0]
+				var ms: int = step.value[1]
+				await delay(ms)
+				label.reserve_space = false
+				label.hide()
+			ExecutionStepType.DELAY:
+				var ms: int = step.value
+				await delay(ms)
+
+
+func execute_as_interjection() -> void:
+	var skip_animation := skip
+	skip = true
+	if not skip_animation:
+		offset_transform_enabled = true
+		offset_transform_position.x = size.x
+	await execute()
+	if not skip_animation:
+		if not size.x:
+			visible = false
+			await get_tree().process_frame
+			visible = true
+		offset_transform_position.x = size.x + 100
+		await create_tween().tween_property(
+			self, "offset_transform_position", Vector2.ZERO, size.x / 200
+		).finished
+
+
+class ExecutionStep extends Resource:
+	var type: ExecutionStepType
+	var value: Variant
+	
+	func _init(type_: ExecutionStepType, value_: Variant = null) -> void:
+		self.type = type_
+		self.value = value_
+
+
+enum ExecutionStepType {
+	## value[0]: DialogCharLabel = label, value[1]: int = speed
+	DISPLAY_LABEL,
+	## value[0]: DialogCharLabel = label, value[1]: int = speed
+	HIDE_LABEL,
+	## value: int = speed
+	DELAY,
+}

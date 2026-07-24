@@ -48,3 +48,10 @@ func split(from: int) -> DialogWord:
 		word.add_child(child)
 		word.length += 1
 	return word
+
+
+func _to_string() -> String:
+	var str_: String = ""
+	for child: DialogCharLabel in get_children():
+		str_ += str(child)
+	return str_

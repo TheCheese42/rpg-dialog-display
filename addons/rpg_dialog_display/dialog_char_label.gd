@@ -1,10 +1,17 @@
 class_name DialogCharLabel
 extends Label
 
+## If true, the label will always take up space, even while being invisible.
+var reserve_space: bool = true:
+	get:
+		return reserve_space
+	set(value):
+		reserve_space = value
+		if modulate.a == 0.0:
+			visible = value
 var _chr: String
 var _speaker: SpeakerMeta
 var _color: Color
-var speed: int
 var _wave_intensity: int
 var _wave_speed: int
 var _shake_intensity: int
@@ -21,12 +28,10 @@ func init(
 	_chr = chr
 	_speaker = speaker
 	_color = formatting.color
-	speed = formatting.speed
 	_wave_intensity = formatting.wave_intensity
 	_wave_speed = formatting.wave_speed
 	_shake_intensity = formatting.shake_intensity
 	_shake_speed = formatting.shake_speed
-	modulate.a = 0.0
 
 
 func _ready() -> void:
@@ -38,15 +43,31 @@ func _ready() -> void:
 		settings.font_size = _speaker.font_size
 	settings.font_color = _color
 	label_settings = settings
+	hide()
 
 func display() -> void:
 	modulate.a = 1.0
+	visible = true
 	setup_tweens()
 
 
-func setup_tweens() -> void:
+func hide() -> void:
+	modulate.a = 0.0
+	if not reserve_space:
+		visible = false
+	clear_tweens()
+
+
+func clear_tweens() -> void:
 	if _wave_tween:
 		_wave_tween.kill()
+	if _shake_timer:
+		_shake_timer.stop()
+		_shake_timer.queue_free()
+
+
+func setup_tweens() -> void:
+	clear_tweens()
 	if _wave_intensity > 0 and _wave_speed > 0:
 		_wave_tween = create_tween()
 		_wave_tween.set_trans(Tween.TRANS_SINE)
@@ -61,9 +82,6 @@ func setup_tweens() -> void:
 			Vector2(0, _wave_intensity),
 			_wave_speed / 1000.0,
 		)
-	if _shake_timer:
-		_shake_timer.stop()
-		_shake_timer.queue_free()
 	if _shake_intensity > 0 and _shake_speed > 0:
 		_shake_timer = Timer.new()
 		add_child(_shake_timer)
@@ -74,3 +92,7 @@ func setup_tweens() -> void:
 func _shake() -> void:
 	offset_transform_position.x = randi_range(-_shake_intensity / 2, _shake_intensity / 2)
 	offset_transform_position.y = randi_range(-_shake_intensity, _shake_intensity)
+
+
+func _to_string() -> String:
+	return _chr

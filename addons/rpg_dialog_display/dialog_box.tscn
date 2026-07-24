@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://cb0yy5lran3ln"]
 
-[ext_resource type="Script" uid="uid://b5ykkcuv42l6x" path="res://addons/rpg_dialog_printer/dialog_box.gd" id="1_a00km"]
+[ext_resource type="Script" uid="uid://b5ykkcuv42l6x" path="res://addons/rpg_dialog_display/dialog_box.gd" id="1_a00km"]
 
 [node name="DialogBox" type="VBoxContainer" unique_id=1286396725]
 anchors_preset = 15
@@ -14,29 +14,93 @@ script = ExtResource("1_a00km")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="." unique_id=876578553]
 layout_mode = 2
-size_flags_vertical = 3
 theme_override_constants/separation = 0
 
 [node name="Portrait" type="TextureRect" parent="HBoxContainer" unique_id=364070598]
 layout_mode = 2
 
-[node name="ScrollContainer" type="ScrollContainer" parent="HBoxContainer" unique_id=1937434373]
+[node name="MainVBox" type="VBoxContainer" parent="HBoxContainer" unique_id=54236176]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="MainVBox" type="VBoxContainer" parent="HBoxContainer/ScrollContainer" unique_id=54236176]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="LinesVBox" type="VBoxContainer" parent="HBoxContainer/ScrollContainer/MainVBox" unique_id=377450895]
+[node name="LinesVBox" type="VBoxContainer" parent="HBoxContainer/MainVBox" unique_id=377450895]
 layout_mode = 2
 size_flags_vertical = 0
 
-[node name="InterjectionHBox" type="HBoxContainer" parent="HBoxContainer/ScrollContainer/MainVBox" unique_id=426820843]
+[node name="InterjectionHBox" type="HBoxContainer" parent="HBoxContainer/MainVBox" unique_id=426820843]
+clip_contents = true
 layout_mode = 2
 size_flags_horizontal = 8
 size_flags_vertical = 8
 alignment = 2
 
-[node name="InterjectionPortrait" type="TextureRect" parent="HBoxContainer/ScrollContainer/MainVBox/InterjectionHBox" unique_id=69163086]
+[node name="InterjectionPortrait" type="TextureRect" parent="HBoxContainer/MainVBox/InterjectionHBox" unique_id=69163086]
 layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=781885457]
+layout_mode = 2
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_right = 10
+
+[node name="ChoicesHBox" type="HBoxContainer" parent="MarginContainer" unique_id=1538721455]
+layout_mode = 2
+theme_override_constants/separation = 50
+
+[node name="ChoiceLeft" type="Label" parent="MarginContainer/ChoicesHBox" unique_id=977795046]
+custom_minimum_size = Vector2(1, 1)
+layout_mode = 2
+size_flags_horizontal = 3
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="ChoicesVBox" type="VBoxContainer" parent="MarginContainer/ChoicesHBox" unique_id=159794677]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 2.0
+
+[node name="ChoiceTop" type="Label" parent="MarginContainer/ChoicesHBox/ChoicesVBox" unique_id=950304679]
+custom_minimum_size = Vector2(1, 1)
+layout_mode = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="ChoiceCenter" type="Label" parent="MarginContainer/ChoicesHBox/ChoicesVBox" unique_id=752535476]
+custom_minimum_size = Vector2(1, 1)
+layout_mode = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="ChoiceStar" type="Label" parent="MarginContainer/ChoicesHBox/ChoicesVBox/ChoiceCenter" unique_id=276871602]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -11.5
+offset_right = 20.0
+offset_bottom = 11.5
+grow_horizontal = 2
+grow_vertical = 2
+offset_transform_enabled = true
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ChoiceBottom" type="Label" parent="MarginContainer/ChoicesHBox/ChoicesVBox" unique_id=1334834666]
+custom_minimum_size = Vector2(1, 1)
+layout_mode = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="ChoiceRight" type="Label" parent="MarginContainer/ChoicesHBox" unique_id=1906279585]
+custom_minimum_size = Vector2(1, 1)
+layout_mode = 2
+size_flags_horizontal = 3
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3

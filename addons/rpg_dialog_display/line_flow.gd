@@ -163,14 +163,16 @@ func build_from_text(text: String, preset: Dictionary, speaker: SpeakerMeta) -> 
 								))
 					i = i + match_.get_end() - 1
 		elif chr != "\\" or text[i + 1] != "<":
-			# Eventually modify the speed for this particular character before writing
+			# Possibly modify the speed for this particular character before writing
 			var char_speed: int = execution_speed
-			if text[i - 1] == ",":
+			var punctuation: Array[String] = [".", ":", ";"]
+			if i > 0 and text[i - 1] == ",":
 				char_speed *= 3
-			elif text[i - 1] in [".", ":", ";"]:
+			elif i > 0 and text[i - 1] in punctuation and text[i] not in punctuation:
 				char_speed *= 5
 			var label: DialogCharLabel = write(chr, speaker, formatting)
 			label.reserve_space = should_reserve_space
+			print(chr, " ", char_speed)
 			_execution_steps.append(ExecutionStep.new(
 				ExecutionStepType.DISPLAY_LABEL, [label, char_speed]
 			))

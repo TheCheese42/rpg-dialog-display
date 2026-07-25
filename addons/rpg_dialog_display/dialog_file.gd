@@ -56,12 +56,8 @@ extends Resource
 class Conversation extends DialogComponent:
 	@export var original_hash: int = 0
 	@export var id: DialogUID = DialogUID.new()
-	@export var preset: String = Globals.generic_preset_names[0]
+	@export var preset: String
 	@export var contents: Array = []
-
-	func _init() -> void:
-		if preset not in Globals.generic_preset_names:
-			preset = Globals.generic_preset_names[0]
 
 	func _to_string() -> String:
 		return str(id)
@@ -119,10 +115,6 @@ class Page extends ConversationContent:
 	@export var preset: String = ""
 	@export var interjection: Interjection = Interjection.new()
 	@export var contents: Array
-
-	func _init() -> void:
-		if preset and preset not in Globals.generic_preset_names:
-			preset = ""
 
 	func _to_string() -> String:
 		return "[{0}] {1}".format([id, text])

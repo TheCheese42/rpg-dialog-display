@@ -172,7 +172,6 @@ func build_from_text(text: String, preset: Dictionary, speaker: SpeakerMeta) -> 
 				char_speed *= 5
 			var label: DialogCharLabel = write(chr, speaker, formatting)
 			label.reserve_space = should_reserve_space
-			print(chr, " ", char_speed)
 			_execution_steps.append(ExecutionStep.new(
 				ExecutionStepType.DISPLAY_LABEL, [label, char_speed]
 			))

@@ -2,11 +2,12 @@
 class_name DialogUID
 extends Resource
 
+static var uid_objects: Array[DialogUID] = []
 @export var _uid: String
 
 
 func _init(uid: String = "") -> void:
-	Globals.uid_objects.append(self)
+	uid_objects.append(self)
 	if uid and _check_valid(uid):
 		_uid = uid
 	else:
@@ -26,7 +27,7 @@ func set_id(uid: String) -> bool:
 
 
 func unregister() -> void:
-	Globals.uid_objects.erase(self)
+	uid_objects.erase(self)
 
 
 func _generate_id() -> String:
@@ -41,7 +42,7 @@ func _generate_id() -> String:
 
 
 func _check_valid(uid: String) -> bool:
-	for other: DialogUID in Globals.uid_objects:
+	for other: DialogUID in uid_objects:
 		if str(other) == uid:
 			return false
 	return true

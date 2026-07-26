@@ -8,12 +8,14 @@ var wave_regex := RegEx.create_from_string(r'<wave(?: (\d+) (\d+)|)>')
 var shake_regex := RegEx.create_from_string(r'<shake(?: (\d+) (\d+)|)>')
 var cursor_regex := RegEx.create_from_string(r'<cur(?: (\d+)|)>')
 var backspace_regex := RegEx.create_from_string(r'<b(?: (\d+)|)>')
+var script_regex := RegEx.create_from_string(r'<script (\w+)>')
 var char_to_word: Dictionary[DialogCharLabel, DialogWord] = {}
 var cursor_pos: int = 0:
 	get:
 		return cursor_pos
 	set(value):
 		cursor_pos = clampi(value, 0, len(_chars))
+var call_script: Callable = func(id: String) -> void: pass
 var skip: bool = false
 ## If true, words will automatically wrap around lines.
 ## Can only be set while empty.
@@ -30,6 +32,8 @@ var _color_presets: Dictionary[String, Color]
 var _speed_presets: Dictionary[String, int]
 var _delay_presets: Dictionary[String, int]
 
+var _voice_player: AudioStreamPlayer
+
 
 func _init(
 	color_presets: Dictionary[String, Color],
@@ -39,6 +43,9 @@ func _init(
 	_color_presets = color_presets
 	_speed_presets = speed_presets
 	_delay_presets = delay_presets
+	_voice_player = AudioStreamPlayer.new()
+	_voice_player.max_polyphony = 10
+	add_child(_voice_player, false, Node.INTERNAL_MODE_BACK)
 
 
 func _ready() -> void:
@@ -47,7 +54,12 @@ func _ready() -> void:
 	add_theme_constant_override("v_separation", 0)
 
 
+func initialize_voice(voice: AudioStream) -> void:
+	_voice_player.stream = voice
+
+
 func build_from_text(text: String, preset: Dictionary, speaker: SpeakerMeta) -> void:
+	initialize_voice(speaker.voice)
 	var formatting := Formatting.new(
 		preset["color"] as Color,
 		preset["wave_intensity"] as int,
@@ -76,6 +88,7 @@ func build_from_text(text: String, preset: Dictionary, speaker: SpeakerMeta) -> 
 					shake_regex,
 					cursor_regex,
 					backspace_regex,
+					script_regex,
 				]:
 					used_regex = regex
 					match_ = regex.search(text.substr(i, end - i + 1))
@@ -161,11 +174,15 @@ func build_from_text(text: String, preset: Dictionary, speaker: SpeakerMeta) -> 
 								_execution_steps.append(ExecutionStep.new(
 									ExecutionStepType.HIDE_LABEL, [label, execution_speed]
 								))
+						script_regex:
+							_execution_steps.append(ExecutionStep.new(
+								ExecutionStepType.CALL_SCRIPT, match_.get_string(1),
+							))
 					i = i + match_.get_end() - 1
 		elif chr != "\\" or text[i + 1] != "<":
 			# Possibly modify the speed for this particular character before writing
 			var char_speed: int = execution_speed
-			var punctuation: Array[String] = [".", ":", ";"]
+			var punctuation: Array[String] = [".", ":", ";", "?", "!"]
 			if i > 0 and text[i - 1] == ",":
 				char_speed *= 3
 			elif i > 0 and text[i - 1] in punctuation and text[i] not in punctuation:
@@ -303,36 +320,50 @@ func execute() -> void:
 		match step.type:
 			ExecutionStepType.DISPLAY_LABEL:
 				var label: DialogCharLabel = step.value[0]
-				var ms: int = step.value[1]
-				await delay(ms)
+				if not skip:
+					var ms: int = step.value[1]
+					await delay(ms)
+					_voice_player.play()
+				if skip and label.wave_intensity and label.wave_speed:
+					# Wave offset
+					var offset_time: int = 0
+					for previous: DialogCharLabel in _chars:
+						if previous == label:
+							break
+						offset_time += step.value[1]
+					label.wave_animation_offset_time = offset_time
 				label.display()
 			ExecutionStepType.HIDE_LABEL:
 				var label: DialogCharLabel = step.value[0]
 				var ms: int = step.value[1]
 				await delay(ms)
 				label.reserve_space = false
-				label.hide()
+				label.conceil()
 			ExecutionStepType.DELAY:
 				var ms: int = step.value
 				await delay(ms)
+			ExecutionStepType.CALL_SCRIPT:
+				var id: String = step.value
+				await call_script.call(id)
 
 
 func execute_as_interjection() -> void:
 	var skip_animation := skip
 	skip = true
 	if not skip_animation:
-		offset_transform_enabled = true
-		offset_transform_position.x = size.x
+		get_parent().offset_transform_enabled = true
+		get_parent().offset_transform_position.x = get_parent().size.x
 	await execute()
 	if not skip_animation:
 		if not size.x:
 			visible = false
 			await get_tree().process_frame
 			visible = true
-		offset_transform_position.x = size.x + 100
+		get_parent().offset_transform_position.x = get_parent().size.x + 100
 		await create_tween().tween_property(
-			self, "offset_transform_position", Vector2.ZERO, size.x / 200
+			get_parent(), "offset_transform_position", Vector2.ZERO, get_parent().size.x / 200
 		).finished
+		get_parent().offset_transform_enabled = false
 
 
 class ExecutionStep extends Resource:
@@ -351,4 +382,6 @@ enum ExecutionStepType {
 	HIDE_LABEL,
 	## value: int = speed
 	DELAY,
+	## value: String = script_id
+	CALL_SCRIPT,
 }

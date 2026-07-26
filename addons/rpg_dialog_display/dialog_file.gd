@@ -114,10 +114,23 @@ class Page extends ConversationContent:
 	@export var text: String = ""
 	@export var preset: String = ""
 	@export var interjection: Interjection = Interjection.new()
+	@export var allow_skip: bool = true
 	@export var contents: Array
 
 	func _to_string() -> String:
-		return "[{0}] {1}".format([id, text])
+		var clean_text: String = ""
+		var i: int = 0
+		while i < len(text):
+			var chr: String = text[i].replace("\n", " ")
+			if chr == "<" and text[i - 1] != "\\":
+				var end: int = text.find(">", i)
+				if end != -1:
+					i = end
+			else:
+				clean_text += chr
+			i += 1
+			
+		return "[{0}] {1}".format([id, clean_text])
 	
 	func to_dict() -> Dictionary:
 		return {

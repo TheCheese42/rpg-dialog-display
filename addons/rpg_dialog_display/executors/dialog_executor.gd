@@ -41,11 +41,11 @@ func run(
 
 
 func delay(time_ms: int) -> void:
-	if _dialog_box.skip:
+	if _dialog_box.has_skipped:
 		return
 	while time_ms > 50:
 		await get_tree().create_timer(0.05).timeout
-		if _dialog_box.skip:
+		if _dialog_box.has_skipped:
 			return
 		time_ms -= 50
 	await get_tree().create_timer(time_ms / 1000).timeout
@@ -85,5 +85,4 @@ func build_line(
 	)
 	line.allow_flow = allow_flow
 	line.build_from_text(text, preset, speaker)
-	line.skip = _dialog_box.skip
 	return line

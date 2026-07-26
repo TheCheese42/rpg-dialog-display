@@ -10,14 +10,24 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+theme_override_constants/separation = 0
 script = ExtResource("1_a00km")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="." unique_id=876578553]
 layout_mode = 2
 theme_override_constants/separation = 0
 
-[node name="Portrait" type="TextureRect" parent="HBoxContainer" unique_id=364070598]
+[node name="PortraitMargin" type="MarginContainer" parent="HBoxContainer" unique_id=263609653]
 layout_mode = 2
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 16
+
+[node name="Portrait" type="TextureRect" parent="HBoxContainer/PortraitMargin" unique_id=364070598]
+custom_minimum_size = Vector2(64, 64)
+custom_maximum_size = Vector2(64, 64)
+layout_mode = 2
+size_flags_vertical = 0
+stretch_mode = 4
 
 [node name="MainVBox" type="VBoxContainer" parent="HBoxContainer" unique_id=54236176]
 layout_mode = 2
@@ -35,12 +45,15 @@ size_flags_vertical = 8
 alignment = 2
 
 [node name="InterjectionPortrait" type="TextureRect" parent="HBoxContainer/MainVBox/InterjectionHBox" unique_id=69163086]
+custom_minimum_size = Vector2(24, 24)
+custom_maximum_size = Vector2(24, 24)
 layout_mode = 2
 
 [node name="MarginContainer" type="MarginContainer" parent="." unique_id=781885457]
 layout_mode = 2
 theme_override_constants/margin_left = 30
-theme_override_constants/margin_right = 10
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 30
 
 [node name="ChoicesHBox" type="HBoxContainer" parent="MarginContainer" unique_id=1538721455]
 layout_mode = 2
@@ -58,6 +71,7 @@ autowrap_mode = 3
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 2.0
+theme_override_constants/separation = 20
 
 [node name="ChoiceTop" type="Label" parent="MarginContainer/ChoicesHBox/ChoicesVBox" unique_id=950304679]
 custom_minimum_size = Vector2(1, 1)
@@ -104,3 +118,7 @@ size_flags_horizontal = 3
 horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 3
+
+[node name="BottomSpacer" type="Control" parent="." unique_id=1788516353]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2

@@ -9,41 +9,48 @@ var reserve_space: bool = true:
 		reserve_space = value
 		if modulate.a == 0.0:
 			visible = value
-var _chr: String
-var _speaker: SpeakerMeta
-var _color: Color
-var _wave_intensity: int
-var _wave_speed: int
-var _shake_intensity: int
-var _shake_speed: int
+## Offset the waving animation by a certain amount of ms.
+var wave_animation_offset_time: int = 0
+var chr: String
+var speaker: SpeakerMeta
+var color: Color
+var wave_intensity: int
+var wave_speed: int
+var shake_intensity: int
+var shake_speed: int
 var _wave_tween: Tween
 var _shake_timer: Timer
 
 
 func init(
-	chr: String,
-	speaker: SpeakerMeta,
+	chr_: String,
+	speaker_: SpeakerMeta,
 	formatting: Formatting,
 ) -> void:
-	_chr = chr
-	_speaker = speaker
-	_color = formatting.color
-	_wave_intensity = formatting.wave_intensity
-	_wave_speed = formatting.wave_speed
-	_shake_intensity = formatting.shake_intensity
-	_shake_speed = formatting.shake_speed
+	chr = chr_
+	speaker = speaker_
+	color = formatting.color
+	wave_intensity = formatting.wave_intensity
+	wave_speed = formatting.wave_speed
+	shake_intensity = formatting.shake_intensity
+	shake_speed = formatting.shake_speed
 
 
 func _ready() -> void:
-	text = _chr
+	text = chr
 	var settings := LabelSettings.new()
-	if _speaker.font:
-		settings.font = _speaker.font
-	if _speaker.font_size:
-		settings.font_size = _speaker.font_size
-	settings.font_color = _color
+	if speaker.font:
+		settings.font = speaker.font
+	else:
+		settings.font = get_theme_default_font()
+	if speaker.font_size:
+		settings.font_size = speaker.font_size
+	else:
+		settings.font_size = get_theme_default_font_size()
+	settings.font_color = color
 	label_settings = settings
-	hide()
+	conceil()
+
 
 func display() -> void:
 	modulate.a = 1.0
@@ -51,7 +58,7 @@ func display() -> void:
 	setup_tweens()
 
 
-func hide() -> void:
+func conceil() -> void:
 	modulate.a = 0.0
 	if not reserve_space:
 		visible = false
@@ -68,31 +75,35 @@ func clear_tweens() -> void:
 
 func setup_tweens() -> void:
 	clear_tweens()
-	if _wave_intensity > 0 and _wave_speed > 0:
+	if wave_intensity > 0 and wave_speed > 0:
+		var real_offset: int = wave_animation_offset_time % (wave_speed * 2)
+		await get_tree().create_timer(float(real_offset) / 1000.0).timeout
 		_wave_tween = create_tween()
 		_wave_tween.set_trans(Tween.TRANS_SINE)
 		_wave_tween.set_loops()
 		_wave_tween.tween_property(
 			self, "offset_transform_position",
-			Vector2(0, -_wave_intensity),
-			_wave_speed / 1000.0,
+			Vector2(0, -wave_intensity),
+			wave_speed / 1000.0,
 		)
 		_wave_tween.tween_property(
 			self, "offset_transform_position",
-			Vector2(0, _wave_intensity),
-			_wave_speed / 1000.0,
+			Vector2(0, wave_intensity),
+			wave_speed / 1000.0,
 		)
-	if _shake_intensity > 0 and _shake_speed > 0:
+		#_wave_tween.set_speed_scale(20.0)
+		#_wave_tween.set_speed_scale(1.0)
+	if shake_intensity > 0 and shake_speed > 0:
 		_shake_timer = Timer.new()
 		add_child(_shake_timer)
 		_shake_timer.timeout.connect(_shake)
-		_shake_timer.start(_shake_speed / 1000.0)
+		_shake_timer.start(shake_speed / 1000.0)
 
 
 func _shake() -> void:
-	offset_transform_position.x = randi_range(-_shake_intensity / 2, _shake_intensity / 2)
-	offset_transform_position.y = randi_range(-_shake_intensity, _shake_intensity)
+	offset_transform_position.x = randi_range(-shake_intensity / 2, shake_intensity / 2)
+	offset_transform_position.y = randi_range(-shake_intensity, shake_intensity)
 
 
 func _to_string() -> String:
-	return _chr
+	return chr

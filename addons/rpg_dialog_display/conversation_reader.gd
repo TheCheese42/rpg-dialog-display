@@ -45,11 +45,6 @@ func execute_from_page(id: String) -> void:
 	await _walk_dialog(conversation, _StringObject.new(id))
 
 
-## Calls execute_from_page without blocking.
-func goto(id: String) -> void:
-	call("execute_from_page", id)
-
-
 func _walk_dialog(
 	component: DialogFile.DialogComponent,
 	# Uses _StringObject to pass the id by reference so one tree
